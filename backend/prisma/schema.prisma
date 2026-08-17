@@ -1,0 +1,166 @@
+// Prisma schema for Ifora Isaqova tikuvchilik akademiyasi
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Course {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  title          String
+  description    String
+  category       String
+  level          String
+  durationMonths Int
+  lessonsCount   Int
+  studentsCount  Int
+  price          Int
+  oldPrice       Int?
+  rating         Float
+  badge          String?
+  coverColor     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  enrollments Enrollment[]
+  orders      Order[]
+}
+
+model Founder {
+  id                String @id @default(uuid())
+  name              String
+  role              String
+  experienceYears   Int
+  studentsGraduated Int
+  bio               String
+  quote             String
+  achievements      String[]
+}
+
+model Testimonial {
+  id       String  @id @default(uuid())
+  name     String
+  course   String
+  rating   Float
+  text     String
+  approved Boolean @default(true)
+}
+
+model PlatformStat {
+  key    String @id
+  label  String
+  value  Int
+  suffix String
+}
+
+model Lead {
+  id               String   @id @default(uuid())
+  phone            String
+  telegramUsername String?
+  courseSlug       String?
+  contacted        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  phone         String   @unique
+  email         String?  @unique
+  passwordHash  String?
+  avatarInitial String
+  role          Role     @default(STUDENT)
+  joinedAt      DateTime @default(now())
+
+  enrollments   Enrollment[]
+  notifications Notification[]
+  orders        Order[]
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  fullName  String
+  phone     String
+  amount    Int
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BlogPost {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  excerpt     String
+  content     String
+  coverColor  String
+  publishedAt DateTime @default(now())
+}
+
+model Enrollment {
+  id               String @id @default(uuid())
+  progressPercent  Int
+  completedLessons Int
+  totalLessons     Int
+  nextLesson       String
+  results          Json
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  time      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScheduleItem {
+  id          String @id @default(uuid())
+  day         String
+  time        String
+  courseTitle String
+  topic       String
+}
