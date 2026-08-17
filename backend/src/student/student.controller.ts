@@ -29,6 +29,11 @@ export class StudentController {
     return this.studentService.getResults(user.id);
   }
 
+  @Get('rewards')
+  getRewards(@CurrentUser() user: AuthUser) {
+    return this.studentService.getRewards(user.id);
+  }
+
   @Get('schedule')
   getSchedule() {
     return this.studentService.getSchedule();

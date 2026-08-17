@@ -11,11 +11,13 @@ import {
   EnrolledCourse,
   NotificationItem,
   ResultRow,
+  RewardStatus,
   ScheduleItem,
   StudentProfile,
   StudentProgressRing,
   StudentStat,
 } from './student.types';
+import { buildRewardStatus } from './reward-tiers';
 
 const PROFILE: StudentProfile = {
   firstName: 'Mohira',
@@ -239,6 +241,19 @@ function computeStats(enrollments: EnrollmentWithCourse[]): StudentStat[] {
   ];
 }
 
+function computeTotalPoints(enrollments: EnrollmentWithCourse[]): number {
+  return enrollments.reduce((sum, e) => {
+    const rows = (e.results as unknown as ResultRow[]) ?? [];
+    return sum + rows.reduce((rowSum, row) => rowSum + row.score, 0);
+  }, 0);
+}
+
+const DEMO_TOTAL_POINTS = RESULTS.reduce(
+  (sum, course) =>
+    sum + course.rows.reduce((rowSum, row) => rowSum + row.score, 0),
+  0,
+);
+
 function computeProgress(
   enrollments: EnrollmentWithCourse[],
 ): StudentProgressRing[] {
@@ -373,6 +388,30 @@ export class StudentService {
       );
     }
     return RESULTS;
+  }
+
+  async getRewards(userId: string): Promise<RewardStatus> {
+    try {
+      const user = await this.getUser(userId);
+      if (user) return buildRewardStatus(computeTotalPoints(user.enrollments));
+    } catch (error) {
+      this.logger.warn(
+        `getRewards() falling back to demo data: ${(error as Error).message}`,
+      );
+    }
+    return buildRewardStatus(DEMO_TOTAL_POINTS);
+  }
+
+  async getTotalPoints(userId: string): Promise<number> {
+    try {
+      const user = await this.getUser(userId);
+      if (user) return computeTotalPoints(user.enrollments);
+    } catch (error) {
+      this.logger.warn(
+        `getTotalPoints() falling back to 0: ${(error as Error).message}`,
+      );
+    }
+    return 0;
   }
 
   async getSchedule(): Promise<ScheduleItem[]> {

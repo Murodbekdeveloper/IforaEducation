@@ -56,3 +56,24 @@ export interface ScheduleItem {
   courseTitle: string;
   topic: string;
 }
+
+export interface RewardTier {
+  key: string;
+  title: string;
+  threshold: number;
+  discountPercent: number;
+  perk: string;
+}
+
+export interface RewardTierStatus extends RewardTier {
+  unlocked: boolean;
+}
+
+export interface RewardStatus {
+  totalPoints: number;
+  discountPercent: number;
+  currentTierTitle: string | null;
+  nextTier: RewardTierStatus | null;
+  pointsToNext: number | null;
+  tiers: RewardTierStatus[];
+}

@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import type { OrderStatus } from '../generated/prisma/enums';
+import { StudentService } from '../student/student.service';
+import { getDiscountPercent } from '../student/reward-tiers';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly studentService: StudentService,
+  ) {}
 
   async create(userId: string, dto: CreateOrderDto) {
     const course = await this.prisma.course.findUnique({
@@ -15,11 +20,19 @@ export class OrdersService {
       throw new NotFoundException(`Course "${dto.courseSlug}" not found`);
     }
 
+    const totalPoints = await this.studentService.getTotalPoints(userId);
+    const discountPercent = getDiscountPercent(totalPoints);
+    const amount =
+      discountPercent > 0
+        ? Math.round((course.price * (100 - discountPercent)) / 100 / 1000) *
+          1000
+        : course.price;
+
     const order = await this.prisma.order.create({
       data: {
         fullName: dto.fullName,
         phone: dto.phone,
-        amount: course.price,
+        amount,
         userId,
         courseId: course.id,
       },
