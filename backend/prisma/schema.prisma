@@ -1,9 +1,7 @@
-// Prisma schema for Ifora Isaqova tikuvchilik akademiyasi
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client"
+  output        = "../src/generated/prisma"
+  moduleFormat  = "cjs"
 }
 
 datasource db {
@@ -33,7 +31,7 @@ model Course {
 }
 
 model Founder {
-  id                String @id @default(uuid())
+  id                String   @id @default(uuid())
   name              String
   role              String
   experienceYears   Int
@@ -84,9 +82,11 @@ model User {
   role          Role     @default(STUDENT)
   joinedAt      DateTime @default(now())
 
-  enrollments   Enrollment[]
-  notifications Notification[]
-  orders        Order[]
+  enrollments       Enrollment[]
+  notifications     Notification[]
+  orders            Order[]
+  liveChatMessages  LiveChatMessage[]
+  liveSpeakRequests LiveSpeakRequest[]
 }
 
 enum OrderStatus {
@@ -130,12 +130,13 @@ model BlogPost {
 }
 
 model Enrollment {
-  id               String @id @default(uuid())
+  id               String    @id @default(uuid())
   progressPercent  Int
   completedLessons Int
   totalLessons     Int
   nextLesson       String
   results          Json
+  completedAt      DateTime?
 
   userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -163,4 +164,57 @@ model ScheduleItem {
   time        String
   courseTitle String
   topic       String
+}
+
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+model LiveSession {
+  id             String            @id @default(uuid())
+  title          String
+  description    String?
+  youtubeVideoId String?
+  status         LiveSessionStatus @default(SCHEDULED)
+  scheduledAt    DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  messages      LiveChatMessage[]
+  speakRequests LiveSpeakRequest[]
+}
+
+model LiveChatMessage {
+  id        String   @id @default(uuid())
+  message   String
+  createdAt DateTime @default(now())
+
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum SpeakRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model LiveSpeakRequest {
+  id         String             @id @default(uuid())
+  status     SpeakRequestStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+  resolvedAt DateTime?
+
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveSessionId, userId])
 }

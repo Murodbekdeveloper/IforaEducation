@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { AdminLoginDto } from './dto/admin-login.dto';
 import { AuthResult, AuthUser } from './auth.types';
 
 function normalizePhone(phone: string): string {
@@ -57,6 +58,22 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
       throw new UnauthorizedException('Telefon raqam yoki parol notoʻgʻri.');
+    }
+
+    return this.buildResult(user);
+  }
+
+  async loginAdmin(dto: AdminLoginDto): Promise<AuthResult> {
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user?.passwordHash || user.role !== 'ADMIN') {
+      throw new UnauthorizedException('Email yoki parol notoʻgʻri.');
+    }
+
+    const valid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Email yoki parol notoʻgʻri.');
     }
 
     return this.buildResult(user);
