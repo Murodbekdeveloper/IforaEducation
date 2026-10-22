@@ -234,9 +234,7 @@ export class LiveService {
     return row ? this.toSpeakRequestView(row) : null;
   }
 
-  async listSpeakRequests(
-    sessionId: string,
-  ): Promise<LiveSpeakRequestView[]> {
+  async listSpeakRequests(sessionId: string): Promise<LiveSpeakRequestView[]> {
     const rows = await this.prisma.liveSpeakRequest.findMany({
       where: { liveSessionId: sessionId },
       orderBy: { createdAt: 'asc' },
@@ -258,6 +256,11 @@ export class LiveService {
     requestId: string,
     dto: ResolveSpeakRequestDto,
   ): Promise<LiveSpeakRequestView> {
+    const existing = await this.prisma.liveSpeakRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!existing) throw new NotFoundException('Soʻrov topilmadi.');
+
     const row = await this.prisma.liveSpeakRequest.update({
       where: { id: requestId },
       data: { status: dto.status, resolvedAt: new Date() },
